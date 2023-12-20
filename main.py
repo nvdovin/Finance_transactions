@@ -19,7 +19,6 @@ class Transactions:
         self.root.resizable(False, False)
 
         self.transaction_var = IntVar(value=0)
-        print(self.transaction_var.get())
 
         self.create_database()
         self.hat_form()
@@ -39,37 +38,67 @@ class Transactions:
     def start_form(self):
         """Запуск формы"""
         if self.transaction_var.get() == 0:
-            self.clear_form()
             self.add_form()
         else:
-            self.clear_form()
             self.del_form()
 
     def add_form(self):
-        self.enter_form()
+        try:
+            self.id_label.grid_forget()
+            self.id_entry.grid_forget()
+            self.del_button.grid_forget()
+        except:
+            pass
+
+        grades_list = ["Еда", "Одежда", "Досуг", "Авто", "Жильё", "Прочее"]
+
+        self.sum_label = Label(self.main_frame, text='Сумма', font='16')
+        self.sum_label.grid(row=1, column=0, sticky='n', columnspan=2)
+
+        self.title_label = Label(self.main_frame, text='Название', font='16')
+        self.title_label.grid(row=1, column=2, sticky='n', columnspan=2)
+
+        self.grade_label = Label(self.main_frame, text='Категория', font='16')
+        self.grade_label.grid(row=1, column=4, sticky='n', columnspan=2)
+
+        self.sum_entry = Entry(self.main_frame, font='13', width=17, border=1)
+        self.sum_entry.grid(row=2, column=0, columnspan=2)
+
+        self.title_entry = Entry(self.main_frame, font='13', width=17, border=1)
+        self.title_entry.grid(row=2, column=2, columnspan=2)
+
+        self.grade_listbox = ttk.Combobox(self.main_frame, font='13', width=17, values=grades_list)
+        self.grade_listbox.grid(row=2, column=4, columnspan=2)
+
+        self.enter_button = Button(self.main_frame, font='14', text='Внести', bd=5, width=40, height=1, command=self.enter_to_database)
+        self.enter_button.grid(row=3, column=1, columnspan=4, rowspan=2, pady=10)
+
         self.build_short_table()
 
     def del_form(self):
+        try:
+            self.sum_label.grid_forget()
+            self.title_label.grid_forget()
+            self.grade_label.grid_forget()
+            self.sum_entry.grid_forget()
+            self.title_entry.grid_forget()
+            self.grade_listbox.grid_forget()
+            self.enter_button.grid_forget()
+        except:
+            pass
+
         self.id_label = Label(self.main_frame, text='ID записи', font='14')
         self.id_label.grid(row=1, column=1, columnspan=2, sticky='e')
         self.id_entry = Entry(self.main_frame, font='13', width=10)
         self.id_entry.grid(row=1, column=3, columnspan=2, sticky='w')
 
-        del_button = Button(self.main_frame, text='Удалить запись', font='14')
-        del_button.grid(row=2, column=2, columnspan=2, pady=15)
+        self.del_button = Button(self.main_frame, text='Удалить запись', font='14', command=self.delete_from_database)
+        self.del_button.grid(row=2, column=2, columnspan=2, pady=15)
 
         self.build_short_table()
 
-    def clear_form(self):
-        """Очищает форму"""
-
-        for widget in self.main_frame.winfo_children():
-            print(widget)
-            widget.destroy()
-
     def build_short_table(self):
-        """Создание короткой таблички внизу экрана
-        """
+        """Создание короткой таблички внизу экрана"""
         show_database_button = Button(self.main_frame, text='Показать историю', font='10', height=1, width=50)
         show_database_button.grid(row=6, column=1, columnspan=4, rowspan=1, sticky='n', pady=30)
 
@@ -97,31 +126,27 @@ class Transactions:
 
         self.root.mainloop()
 
-    def enter_form(self):
-        """Форма для создания записей в базу данных"""
-            
-        grades_list = ["Еда", "Одежда", "Досуг", "Авто", "Жильё", "Прочее"]
+    def delete_from_database(self):
+        """Удалить данную запись из базы данных"""
+        id_from_entry = self.id_entry.get()
 
-        self.sum_label = Label(self.main_frame, text='Сумма', font='16')
-        self.sum_label.grid(row=1, column=0, sticky='n', columnspan=2)
+        # Получим список всех доступных для удаления записей
+        self.cursor.execute(f'''SELECT "id" FROM transactions;''')
+        id_list_from_database = self.cursor.fetchall()
+        id_list = []
+        for _id in id_list_from_database:
+            id_list.append(f"{_id[0]}")
 
-        self.title_label = Label(self.main_frame, text='Название', font='16')
-        self.title_label.grid(row=1, column=2, sticky='n', columnspan=2)
+        # Удаляем данную запись из базы данных
+        if id_from_entry in id_list:
+            self.cursor.execute(f''' DELETE FROM "transactions" WHERE "id"={id_from_entry}''')
+            print(f'Запись "{id_from_entry}" удалена')
+        else:
+            print(f'Нет записи с id {id_from_entry} в базе данных')
+        self.id_entry.delete(0, END)
+        self.refresh_short_table()
 
-        self.grade_label = Label(self.main_frame, text='Категория', font='16')
-        self.grade_label.grid(row=1, column=4, sticky='n', columnspan=2)
-
-        self.sum_entry = Entry(self.main_frame, font='13', width=17, border=1)
-        self.sum_entry.grid(row=2, column=0, columnspan=2)
-
-        self.title_entry = Entry(self.main_frame, font='13', width=17, border=1)
-        self.title_entry.grid(row=2, column=2, columnspan=2)
-
-        self.grade_listbox = ttk.Combobox(self.main_frame, font='13', width=17, values=grades_list)
-        self.grade_listbox.grid(row=2, column=4, columnspan=2)
-
-        self.enter_button = Button(self.main_frame, font='14', text='Внести', bd=5, width=40, height=1, command=self.enter_to_database)
-        self.enter_button.grid(row=3, column=1, columnspan=4, rowspan=2, pady=10)
+        self.build_short_table()
 
     def refresh_short_table(self):
         """Обновление короткой таблицы"""
@@ -144,7 +169,7 @@ class Transactions:
         self.cursor.execute(f'''CREATE TABLE IF NOT EXISTS 
                             transactions
                             (
-                            id INT,
+                            id INT UNIQUE,
                             date_time TEXT,
                             money_value FLOAT,
                             title TEXT,
@@ -155,23 +180,17 @@ class Transactions:
         """#### Внести запись в БД
         В зависимости от вида действия вносим или удаляем запись"""
 
-        last_id = len(self.cursor.fetchall())
-        print(f"Last ID: {last_id}")
-
+        self.cursor.execute('SELECT "id" FROM transactions ORDER BY "id" DESC LIMIT 1;')
+        last_id = self.cursor.fetchall()[0][0] + 1
         sum_value = self.sum_entry.get()
-        print(f"Sum: {sum_value}")
-
         title = self.title_entry.get()
-        print(f"Title: {title}")
-
         grade = self.grade_listbox.get()
-        print(f'Grade: {grade}')
 
         self.cursor.execute(f'''INSERT INTO transactions 
                             VALUES(
-                            "{last_id}",
+                            {last_id},
                             "{datetime.now()}",
-                            "{sum_value}", 
+                            {sum_value}, 
                             "{title}",
                             "{grade}"
                             ) ''')
